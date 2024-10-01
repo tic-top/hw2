@@ -16,7 +16,7 @@ double f(double x) {
     return y;
 }
 
-double g(int z) {
+double g(double z) {
     // Calculate min{30, z}
     double min_val = (z < 30) ? z : 30;
     
@@ -24,6 +24,10 @@ double g(int z) {
     return (min_val > -25) ? min_val : -25;
 }
 
+// a,b,c,d,e
+double h(double a, double b, double c, double d, double e) {
+    return g(f(a) + g(b) + f(c) + g(d) + f(e) / 5);
+}
 
 void get_first_col(vector<double>& msg, const vector<vector<double>>& A0) {
     for (vector<double> vec: A0) msg.push_back(vec[0]);
@@ -38,12 +42,16 @@ void append_col(vector<vector<double>>& A0) {
 }
 
 void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID) {
+    // 至少对于样例是可以均分的
     int n_of_P = sqrt(P);
     int sub_rows = ceil(m / n_of_P);
     int sub_cols = ceil(n / n_of_P);
 
     int row = floor(ID / n_of_P);
     int col = ID - row * n_of_P;
+    // boundary
+    int num_row = min(sub_rows * (row + 1), m) - sub_rows * row;
+    int num_col = min(sub_cols * (col + 1), n) - sub_cols * col;
 
     if (verbose)  {
         cout << "Start process " << ID << " of " << P 
@@ -52,11 +60,11 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
             << ", i_start = " << sub_rows * row 
             << ", i_end = " << min(sub_rows * (row + 1), m) 
             << ", j_start = " << sub_cols * col 
-            << ", j_end = " << min(sub_cols * (col + 1), n) << " ";
+            << ", j_end = " << min(sub_cols * (col + 1), n) 
+            << ", num_row = " << num_row
+            << ", num_col = " << num_col
+            << "\n";  
     }
-
-    int num_row = min(sub_rows * (row + 1), m) - sub_rows * row;
-    int num_col = min(sub_cols * (col + 1), n) - sub_cols * col;
 
     vector<vector<double>> A0(num_row, vector<double> (num_col, 0));
 
@@ -73,23 +81,34 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
     if (verbose) {
         cout << "row = " << row << ", " << "col = " << col << ", ";
         cout << "Contents of " << ID <<  ": ";
-        for (int i = 0; i < num_row; i++) {
-            for (int j = 0; j < num_col; j++) {
-                cout << A0[i][j] << " ";
-            }
-        }
+        // for (int i = 0; i < num_row; i++) {
+        //     for (int j = 0; j < num_col; j++) {
+        //         cout << A0[i][j] << " ";
+        //     }
+        // }
         cout << "\n";
     }
 
-    // start sending 
     MPI_Barrier(MPI_COMM_WORLD);
     double start = MPI_Wtime();
+    double up_row[num_col];
+    double down_row[num_col];
+    double right_col[num_row];
+    double left_col[num_row];
+    double t_l, t_r, b_l, b_r;
+        
+    IT_NUM = 2;  // remember to delete
     for (int it = 0; it < IT_NUM; it++) {
         // For each process, send the required columns or rows to neighboring processes
         // Send left column to the left neighbor
         if (col != 0) {  // If not in the first column
             vector<double> msg;
             get_first_col(msg, A0);  // Get the first column of the submatrix
+            // if (verbose) {
+            //     cout << "Sending msg from right " << ID << " to " << ID - 1 << ": ";
+            //     for (double elt: msg) cout << elt << " ";
+            //     cout << endl;
+            // }
             MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - 1, 0, MPI_COMM_WORLD);  // Send to the left
         }
 
@@ -138,91 +157,89 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         }
 
 
-        double last_up_row[num_col];
-        double last_up_col[num_row];
-        double last_down_row[num_col];
-        double last_down_col[num_row];
-        double l_r, l_l, l_u, l_d;
-        // Receiving the row above from the top neighbor
-        if (row != 0) {  // If not in the first row
-            MPI_Recv(&last_up_row[0], num_col, MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-
-        // Receiving the column to the left from the left neighbor
-        if (col != 0) {  // If not in the first column
-            MPI_Recv(&last_up_col[0], num_row, MPI_DOUBLE, ID - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-
-        // Receiving the row below from the bottom neighbor
-        if (row != n_of_P - 1) {  // If not in the last row
-            MPI_Recv(&last_down_row[0], num_col, MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-
-        // Receiving the column to the right from the right neighbor
+        // from right
         if (col != n_of_P - 1) {  // If not in the last column
-            MPI_Recv(&last_down_col[0], num_row, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&right_col[0], num_row, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
-        // Receiving individual points (corners or adjacent points)
-        // l_l (left neighbor point at the same row)
-        if (col != 0) {
-            MPI_Recv(&l_l, 1, MPI_DOUBLE, ID - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // from left
+        if (col != 0) {  // If not in the first column
+            MPI_Recv(&left_col[0], num_row, MPI_DOUBLE, ID - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-
-        // l_r (right neighbor point at the same row)
-        if (col != n_of_P - 1) {
-            MPI_Recv(&l_r, 1, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // from top
+        if (row != 0) {  // If not in the first row
+            MPI_Recv(&up_row[0], num_col, MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-
-        // l_u (top neighbor point at the same column)
-        if (row != 0) {
-            MPI_Recv(&l_u, 1, MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // from bottom
+        if (row != n_of_P - 1) {  // If not in the last row
+            MPI_Recv(&down_row[0], num_col, MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-
-        // l_d (bottom neighbor point at the same column)
-        if (row != n_of_P - 1) {
-            MPI_Recv(&l_d, 1, MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // from top-left
+        if (row != 0 && col != 0) {  // Top-left diagonal neighbor
+            MPI_Recv(&t_l, 1, MPI_DOUBLE, ID - n_of_P - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-
-
+        // from top-right
+        if (row != 0 && col != n_of_P - 1) {  // Top-right diagonal neighbor
+            MPI_Recv(&t_r, 1, MPI_DOUBLE, ID - n_of_P + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+        // from bottom-left
+        if (row != n_of_P - 1 && col != 0) {  // Bottom-left diagonal neighbor
+            MPI_Recv(&b_l, 1, MPI_DOUBLE, ID + n_of_P - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+        // from bottom-right
+        if (row != n_of_P - 1 && col != n_of_P - 1) {  // Bottom-right diagonal neighbor
+            MPI_Recv(&b_r, 1, MPI_DOUBLE, ID + n_of_P + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+        
         // calculation
         vector<vector<double>> A(num_row, vector<double> (num_col, 0));
         for (int i = 0; i < num_row; ++i) {
             for (int j = 0; j < num_col; ++j) {
-                // Compute the solution based on the received values and local matrix elements
-                double f_value = 0.0;
-
-                // Handle boundaries and apply the equation
-                if (i == 0 && j == 0) {  // Top-left corner
-                    f_value = (f(last_up_row[j]) + f(last_up_row[j+1]) + f(last_down_row[j]) + f(last_down_row[j+1]) + f(A0[i][j])) / 5;
-                } 
-                else if (i == 0 && j == num_col - 1) {  // Top-right corner
-                    f_value = (f(last_up_row[j-1]) + f(last_up_row[j]) + f(last_down_row[j-1]) + f(last_down_row[j]) + f(A0[i][j])) / 5;
+                // A(i, j) = Ao(i, j) if i = 0 or i = m − 1 or j = 0 or j = n − 1 (i.e., it is unchanged along
+                double global_i = sub_rows * row + i;
+                double global_j = sub_cols * col + j;
+                if (global_i == 0 || global_i == m - 1 || global_j == 0 || global_j == n - 1) {
+                    A[i][j] = A0[i][j];
+                } else {
+                    // now is the local level
+                    // left-up
+                    if (i == 0 && j == 0) {
+                        A[i][j] = h(A0[i][j], t_l, up_row[j+1], left_col[i+1], A0[i+1][j+1]);
+                    }
+                    // right-up
+                    else if (i == 0 && j == num_col - 1) {
+                        A[i][j] = h(A0[i][j], t_r, up_row[j-1], A0[i+1][j-1], right_col[i+1]);
+                    }
+                    // left-down
+                    else if (i == num_row - 1 && j == 0) {
+                        A[i][j] = h(A0[i][j], down_row[j+1], b_l, left_col[i-1], A0[i-1][j+1]);
+                    }
+                    // right-down
+                    else if (i == num_row - 1 && j == num_col - 1) {
+                        A[i][j] = h(A0[i][j], down_row[j-1], b_r, A0[i-1][j-1], right_col[i-1]);
+                    }
+                    // top
+                    else if (i == 0) {
+                        A[i][j] = h(A0[i][j], up_row[j-1], up_row[j+1], A0[i+1][j-1], A0[i+1][j+1]);
+                    }
+                    // bottom
+                    else if (i == num_row - 1) {
+                        A[i][j] = h(A0[i][j], down_row[j-1], down_row[j+1], A0[i-1][j-1], A0[i-1][j+1]);
+                    }
+                    // left
+                    else if (j == 0) {
+                        A[i][j] = h(A0[i][j], A0[i-1][j+1], A0[i+1][j+1], left_col[i-1], left_col[i+1]);
+                    }
+                    // right
+                    else if (j == num_col - 1) {
+                        A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], right_col[i-1], right_col[i+1]);
+                    }
+                    else{
+                        // error and return
+                        cout << "Error: " << i << " " << j << endl;
+                        return;
+                    }
                 }
-                else if (i == num_row - 1 && j == 0) {  // Bottom-left corner
-                    f_value = (f(last_up_row[j]) + f(last_up_row[j+1]) + f(last_down_row[j]) + f(last_down_row[j+1]) + f(A0[i][j])) / 5;
-                }
-                else if (i == num_row - 1 && j == num_col - 1) {  // Bottom-right corner
-                    f_value = (f(last_up_row[j-1]) + f(last_up_row[j]) + f(last_down_row[j-1]) + f(last_down_row[j]) + f(A0[i][j])) / 5;
-                }
-                else if (i == 0) {  // Top edge (not corners)
-                    f_value = (f(last_up_row[j-1]) + f(last_up_row[j+1]) + f(last_down_row[j-1]) + f(last_down_row[j+1]) + f(A0[i][j])) / 5;
-                }
-                else if (i == num_row - 1) {  // Bottom edge (not corners)
-                    f_value = (f(last_up_row[j-1]) + f(last_up_row[j+1]) + f(last_down_row[j-1]) + f(last_down_row[j+1]) + f(A0[i][j])) / 5;
-                }
-                else if (j == 0) {  // Left edge (not corners)
-                    f_value = (f(last_up_row[j]) + f(last_up_row[j+1]) + f(last_down_row[j]) + f(last_down_row[j+1]) + f(A0[i][j])) / 5;
-                }
-                else if (j == num_col - 1) {  // Right edge (not corners)
-                    f_value = (f(last_up_row[j-1]) + f(last_up_row[j]) + f(last_down_row[j-1]) + f(last_down_row[j]) + f(A0[i][j])) / 5;
-                }
-                else {  // Interior points
-                    f_value = (f(A0[i-1][j-1]) + f(A0[i-1][j+1]) + f(A0[i+1][j-1]) + f(A0[i+1][j+1]) + f(A0[i][j])) / 5;
-                }
-
-                // Store the calculated value in A
-                A[i][j] = g(f_value);
             }
         }
 
@@ -232,7 +249,7 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
                 for (int j = 0; j < num_col; j++) {
                     cout << A[i][j] << " ";
                 }
-                // cout << "\n";
+                cout << "\n";
             }
             cout << "\n";
         }
@@ -298,6 +315,7 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     int m = atoi(argv[1]);
     int n = atoi(argv[2]);
+    int verbose = atoi(argv[3]);
     // initilize
     vector<vector<double>> A0(m, vector<double> (n, 0));
 
@@ -307,23 +325,22 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &ID);
     
     // print the input matrix
-    int verbose = atoi(argv[3]);
-    if (ID == 0) {
-        cout << "Root processor " << ID << " is initializing." <<  "\n";
-        for (int i = 0; i < m; i++) 
-            for (int j = 0; j < n; j++) 
-                A0[i][j] = (double)j * sin(i) + i * cos(j) + sqrt(i + j + 1); // double?
-        if (verbose) {
-            cout << "n is: " << n <<  "\n";
-            cout << "A0:\n";
-            for (int i = 0; i < m; i++) {
-                for (int j = 0; j < n; j++) 
-                cout << A0[i][j] << " ";
-                cout << "\n";
-            }
-            cout << "\n";
-        } 
-    }
+    // if (ID == 0) {
+    //     cout << "Root processor " << ID << " is initializing." <<  "\n";
+    //     for (int i = 0; i < m; i++) 
+    //         for (int j = 0; j < n; j++) 
+    //             A0[i][j] = (double)j * sin(i) + i * cos(j) + sqrt(i + j + 1); // double?
+    //     if (verbose) {
+    //         cout << "n is: " << n <<  "\n";
+    //         cout << "A0:\n";
+    //         for (int i = 0; i < m; i++) {
+    //             for (int j = 0; j < n; j++) 
+    //             cout << A0[i][j] << " ";
+    //             cout << "\n";
+    //         }
+    //         cout << "\n";
+    //     } 
+    // }
     
     MPI_Barrier(MPI_COMM_WORLD);
     run_parallel(m, n, &f, verbose, (int)P, (int)ID);
