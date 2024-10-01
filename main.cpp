@@ -376,7 +376,8 @@ int main(int argc, char** argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     if (parallel == 1) {
         run_parallel(m, n, verbose, (int)P, (int)ID);
-    else{
+    }
+    else {
         run_serial(m, n, verbose, (int)P, (int)ID);
     }
 
