@@ -14,4 +14,4 @@
 # module load gcc
 # module load openmpi
 # mpic++ main.cpp -o main
-mpirun -np 1 --bind-to core:overload-allowed ./main 400 400 0 > test.txt
+mpirun -np 1 --bind-to core:overload-allowed ./main 300 1125 0 > t1.txt
