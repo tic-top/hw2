@@ -11,7 +11,6 @@ Example, `mpirun -np 36 --bind-to core:overload-allowed ./main 2000 500 0 1 > pa
 ```
 mpirun -np [number of core] --bind-to core:overload-allowed ./main [m] [n] [verbose(1) or not(0)] [parallel(1) or serial(0)] > [output path]
 ```
-##
 
 ## Methos
 I crop the matrix into $p$ blocks and each part has size $(\frac{m}{sqrt(p)}, \frac{n}{sqrt(p)})$. Except for the blocks on the boundary, the inner blocks need to send its left col, right col, bottom row, up row and 4 corners to the neibours.
@@ -28,6 +27,7 @@ I have test the model with more different numbers of processor(more than the pro
 |  4 |           16 |    2.45964  | 2.99472e+07 |     6.86155e+09 |  7.13775  |     0.446109 |
 |  5 |           25 |    1.59031  | 2.99214e+07 |     6.8614e+09  | 11.0395   |     0.441582 |
 |  6 |           36 |    0.575489 | 2.93378e+07 |     6.85835e+09 | 30.5068   |     0.84741  |
+
 ![image](small.png)
 ### (1000,4000)
 |    |   Processors |   Time Used |         Sum |   Sum of Square |   Speedup |   Efficiency |
@@ -39,6 +39,7 @@ I have test the model with more different numbers of processor(more than the pro
 |  4 |           16 |     9.15621 | 1.05891e+08 |     1.41016e+10 |  7.68751  |     0.48047  |
 |  5 |           25 |     5.73636 | 1.05398e+08 |     1.40988e+10 | 12.2706   |     0.490823 |
 |  6 |           36 |     1.99418 | 1.05441e+08 |     1.40994e+10 | 35.297    |     0.980471 |
+
 ![image](large.png)
 
 ### Scaling, Speedup and efficiency
