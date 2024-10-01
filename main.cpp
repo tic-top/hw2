@@ -21,7 +21,7 @@ double g(int z) {
     double min_val = (z < 30) ? z : 30;
     
     // Calculate max{-25, min{30, z}}
-    retrun (min_val > -25) ? min_val : -25;
+    return (min_val > -25) ? min_val : -25;
 }
 
 
@@ -55,15 +55,17 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
             << ", j_end = " << min(sub_cols * (col + 1), n) << " ";
     }
 
-    int num_rows = min(sub_rows * (row + 1), m) - sub_rows * row;
-    int num_cols = min(sub_cols * (col + 1), n) - sub_cols * col;
+    int num_row = min(sub_rows * (row + 1), m) - sub_rows * row;
+    int num_col = min(sub_cols * (col + 1), n) - sub_cols * col;
 
     vector<vector<double>> A0(num_row, vector<double> (num_col, 0));
 
     // initialize A0
     for (int i = 0; i < num_row; i++) {
         for (int j = 0; j < num_col; j++) {
-            A0[i][j] = (double)(col*sub_n + j) * sin(row*sub_n + i) + (row*sub_n + i) * cos(col*sub_n + j) + sqrt(row*sub_n + i + col*sub_n + j + 1);
+            double ai = sub_rows * row + i;
+            double aj = sub_cols * col + j;
+            A0[i][j] = (double)aj * sin(ai) + ai * cos(aj) + sqrt(ai + aj + 1);
         }
     }
 
@@ -136,6 +138,11 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         }
 
 
+        double last_up_row[num_col];
+        double last_up_col[num_row];
+        double last_down_row[num_col];
+        double last_down_col[num_row];
+        double l_r, l_l, l_u, l_d;
         // Receiving the row above from the top neighbor
         if (row != 0) {  // If not in the first row
             MPI_Recv(&last_up_row[0], num_col, MPI_DOUBLE, ID - sqrt(P), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -257,7 +264,7 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
     }
 
     // sum of square
-    double local_sum = 0;
+    local_sum = 0;
     for (int i = 0; i < num_row; i++) {
         for (int j = 0; j < num_col; j++) {
             local_sum += A0[i][j] * A0[i][j];
@@ -293,7 +300,7 @@ int main(int argc, char** argv) {
     int n = atoi(argv[2]);
     // initilize
     vector<vector<double>> A0(m, vector<double> (n, 0));
-    
+
     int P;
     int ID;
     MPI_Comm_size(MPI_COMM_WORLD, &P);
@@ -319,7 +326,7 @@ int main(int argc, char** argv) {
     }
     
     MPI_Barrier(MPI_COMM_WORLD);
-    run_parallel(n, &f, verbose, (int)P, (int)ID);
+    run_parallel(m, n, &f, verbose, (int)P, (int)ID);
 
     // Finalize MPI.
     MPI_Finalize();
