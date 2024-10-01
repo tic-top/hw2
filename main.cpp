@@ -41,8 +41,55 @@ void append_col(vector<vector<double>>& A0) {
     for (vector<double>& vec: A0) vec.push_back(0);
 }
 
-void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID) {
-    // 至少对于样例是可以均分的
+void run_serial(int m, int n, int verbose, int P, int ID) {
+    // initilize
+    vector<vector<double>> A0(m, vector<double> (n, 0));
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            double ai = i;
+            double aj = j;
+            A0[i][j] = (double)aj * sin(ai) + ai * cos(aj) + sqrt(ai + aj + 1);
+        }
+    }
+
+    double start = MPI_Wtime();
+    for (int it = 0; it < IT_NUM; it++) {
+        vector<vector<double>> A(m, vector<double> (n, 0));
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                // A(i, j) = Ao(i, j) if i = 0 or i = m − 1 or j = 0 or j = n − 1 (i.e., it is unchanged along
+                if (i == 0 || i == m - 1 || j == 0 || j == n - 1) {
+                    A[i][j] = A0[i][j];
+                } else {
+                    // now is the local level
+                    A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], A0[i-1][j+1], A0[i+1][j+1]);
+                }
+            }
+        }
+        A0 = A;
+    }
+    // sum
+    double sum = 0;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            sum += A0[i][j];
+        }
+    }
+    // sum of square
+    double sum_square = 0;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            sum_square += A0[i][j] * A0[i][j];
+        }
+    }
+    // time
+    double end = MPI_Wtime();
+    cout << "Sum is:  " << sum << endl;
+    cout << "Sum of square is:  " << sum_square << endl;
+    cout << "Time: " << end - start << endl;
+}
+
+void run_parallel(int m, int n, int verbose, int P, int ID) {
     int n_of_P = sqrt(P);
     double sqrt_P = sqrt(P);
     int sub_rows = ceil(m / sqrt_P);
@@ -321,34 +368,17 @@ int main(int argc, char** argv) {
     int m = atoi(argv[1]);
     int n = atoi(argv[2]);
     int verbose = atoi(argv[3]);
-    // initilize
-    vector<vector<double>> A0(m, vector<double> (n, 0));
-
+    int parallel = atoi(argv[4]);
     int P;
     int ID;
     MPI_Comm_size(MPI_COMM_WORLD, &P);
     MPI_Comm_rank(MPI_COMM_WORLD, &ID);
-    
-    // print the input matrix
-    // if (ID == 0) {
-    //     cout << "Root processor " << ID << " is initializing." <<  "\n";
-    //     for (int i = 0; i < m; i++) 
-    //         for (int j = 0; j < n; j++) 
-    //             A0[i][j] = (double)j * sin(i) + i * cos(j) + sqrt(i + j + 1); // double?
-    //     if (verbose) {
-    //         cout << "n is: " << n <<  "\n";
-    //         cout << "A0:\n";
-    //         for (int i = 0; i < m; i++) {
-    //             for (int j = 0; j < n; j++) 
-    //             cout << A0[i][j] << " ";
-    //             cout << "\n";
-    //         }
-    //         cout << "\n";
-    //     } 
-    // }
-    
     MPI_Barrier(MPI_COMM_WORLD);
-    run_parallel(m, n, &f, verbose, (int)P, (int)ID);
+    if (parallel == 1) {
+        run_parallel(m, n, verbose, (int)P, (int)ID);
+    else{
+        run_serial(m, n, verbose, (int)P, (int)ID);
+    }
 
     // Finalize MPI.
     MPI_Finalize();
