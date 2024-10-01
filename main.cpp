@@ -39,11 +39,11 @@ void append_col(vector<vector<double>>& A0) {
 
 void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID) {
     int n_of_P = sqrt(P);
-    int sub_rows = ceil(m / sqrt(P));
-    int sub_cols = ceil(n / sqrt(P));
+    int sub_rows = ceil(m / n_of_P);
+    int sub_cols = ceil(n / n_of_P);
 
-    int row = floor(ID / sqrt(P));
-    int col = ID - row * sqrt(P);
+    int row = floor(ID / n_of_P);
+    int col = ID - row * n_of_P;
 
     if (verbose)  {
         cout << "Start process " << ID << " of " << P 
@@ -94,7 +94,7 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         }
 
         // Send right column to the right neighbor
-        if (col != sqrt(P) - 1) {  // If not in the last column
+        if (col != n_of_P - 1) {  // If not in the last column
             vector<double> msg;
             get_last_col(msg, A0);  // Get the last column of the submatrix
             MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD);  // Send to the right
@@ -103,38 +103,38 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         // Send top row to the top neighbor
         if (row != 0) {  // If not in the first row
             vector<double> msg = A0[0];  // Get the first row of the submatrix
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - sqrt(P), 0, MPI_COMM_WORLD);  // Send to the top
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD);  // Send to the top
         }
 
         // Send bottom row to the bottom neighbor
-        if (row != sqrt(P) - 1) {  // If not in the last row
+        if (row != n_of_P - 1) {  // If not in the last row
             vector<double> msg = A0[sub_rows - 1];  // Get the last row of the submatrix
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + sqrt(P), 0, MPI_COMM_WORLD);  // Send to the bottom
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD);  // Send to the bottom
         }
 
         // Handle diagonal neighbors
         if (row != 0 && col != 0) {  // Top-left diagonal neighbor
             vector<double> msg;
             get_first_col(msg, A0);  // Assuming first column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - sqrt(P) - 1, 0, MPI_COMM_WORLD);  // Top-left diagonal
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P - 1, 0, MPI_COMM_WORLD);  // Top-left diagonal
         }
 
-        if (row != 0 && col != sqrt(P) - 1) {  // Top-right diagonal neighbor
+        if (row != 0 && col != n_of_P - 1) {  // Top-right diagonal neighbor
             vector<double> msg;
             get_last_col(msg, A0);  // Assuming last column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - sqrt(P) + 1, 0, MPI_COMM_WORLD);  // Top-right diagonal
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P + 1, 0, MPI_COMM_WORLD);  // Top-right diagonal
         }
 
-        if (row != sqrt(P) - 1 && col != 0) {  // Bottom-left diagonal neighbor
+        if (row != n_of_P - 1 && col != 0) {  // Bottom-left diagonal neighbor
             vector<double> msg;
             get_first_col(msg, A0);  // Assuming first column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + sqrt(P) - 1, 0, MPI_COMM_WORLD);  // Bottom-left diagonal
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P - 1, 0, MPI_COMM_WORLD);  // Bottom-left diagonal
         }
 
-        if (row != sqrt(P) - 1 && col != sqrt(P) - 1) {  // Bottom-right diagonal neighbor
+        if (row != n_of_P - 1 && col != n_of_P - 1) {  // Bottom-right diagonal neighbor
             vector<double> msg;
             get_last_col(msg, A0);  // Assuming last column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + sqrt(P) + 1, 0, MPI_COMM_WORLD);  // Bottom-right diagonal
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P + 1, 0, MPI_COMM_WORLD);  // Bottom-right diagonal
         }
 
 
@@ -145,7 +145,7 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         double l_r, l_l, l_u, l_d;
         // Receiving the row above from the top neighbor
         if (row != 0) {  // If not in the first row
-            MPI_Recv(&last_up_row[0], num_col, MPI_DOUBLE, ID - sqrt(P), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&last_up_row[0], num_col, MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // Receiving the column to the left from the left neighbor
@@ -154,12 +154,12 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         }
 
         // Receiving the row below from the bottom neighbor
-        if (row != sqrt(P) - 1) {  // If not in the last row
-            MPI_Recv(&last_down_row[0], num_col, MPI_DOUBLE, ID + sqrt(P), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        if (row != n_of_P - 1) {  // If not in the last row
+            MPI_Recv(&last_down_row[0], num_col, MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // Receiving the column to the right from the right neighbor
-        if (col != sqrt(P) - 1) {  // If not in the last column
+        if (col != n_of_P - 1) {  // If not in the last column
             MPI_Recv(&last_down_col[0], num_row, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
@@ -170,18 +170,18 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         }
 
         // l_r (right neighbor point at the same row)
-        if (col != sqrt(P) - 1) {
+        if (col != n_of_P - 1) {
             MPI_Recv(&l_r, 1, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // l_u (top neighbor point at the same column)
         if (row != 0) {
-            MPI_Recv(&l_u, 1, MPI_DOUBLE, ID - sqrt(P), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(&l_u, 1, MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
         // l_d (bottom neighbor point at the same column)
-        if (row != sqrt(P) - 1) {
-            MPI_Recv(&l_d, 1, MPI_DOUBLE, ID + sqrt(P), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        if (row != n_of_P - 1) {
+            MPI_Recv(&l_d, 1, MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
 
 
