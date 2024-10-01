@@ -26,7 +26,7 @@ double g(double z) {
 
 // a,b,c,d,e
 double h(double a, double b, double c, double d, double e) {
-    return g(f(a) + g(b) + f(c) + g(d) + f(e) / 5);
+    return g(f(f(a) + g(b) + f(c) + g(d) + f(e)) / 5);
 }
 
 void get_first_col(vector<double>& msg, const vector<vector<double>>& A0) {
