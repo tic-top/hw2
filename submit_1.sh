@@ -11,5 +11,5 @@
 #SBATCH --account=cse587f24_class
 #SBATCH --partition=standard
 
-mpirun -np 1 --bind-to core:overload-allowed ./main 2000 500 > out.txt
-mpirun -np 1 --bind-to core:overload-allowed ./main 1000 4000 > out.txt
+mpirun -np 1 --bind-to core:overload-allowed ./main 2000 500 0 > out.txt
+mpirun -np 1 --bind-to core:overload-allowed ./main 1000 4000 0 > out.txt
