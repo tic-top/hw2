@@ -13,3 +13,5 @@ mpirun -np 1 ./main 500 500 0 > out.txt
 
 
 mpirun -np 4 --bind-to core:overload-allowed ./hello_world > out.txt
+
+squeue -u kirp
