@@ -12,4 +12,4 @@
 #SBATCH --partition=standard
 
 mpirun -np 4 --bind-to core:overload-allowed ./main 2000 500 0 > out.txt
-# mpirun -np 4 --bind-to core:overload-allowed ./main 1000 4000 0 > out.txt
+mpirun -np 4 --bind-to core:overload-allowed ./main 1000 4000 0 > out.txt
