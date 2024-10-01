@@ -97,18 +97,53 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
     double left_col[num_row];
     double t_l, t_r, b_l, b_r;
         
-    IT_NUM = 2;  // remember to delete
     for (int it = 0; it < IT_NUM; it++) {
-        // For each process, send the required columns or rows to neighboring processes
-        // Send left column to the left neighbor
+        if (ID == 0 && verbose) {
+            cout << "Iteration " << it << endl;
+        }
+        // Send diagonal neighbors
+        if (row != 0 && col != 0) {  // send to Top-left neighbor
+            double msg = A0[0][0];  // Assuming first element for diagonal communication
+            MPI_Send(&msg, 1, MPI_DOUBLE, ID - n_of_P - 1, 0, MPI_COMM_WORLD);  // Top-left diagonal
+        }
+        if (row != 0 && col != n_of_P - 1) {  // send to Top-right neighbor
+            double msg = A0[0][num_col - 1];  // Assuming last element for diagonal communication
+            MPI_Send(&msg, 1, MPI_DOUBLE, ID - n_of_P + 1, 0, MPI_COMM_WORLD);  // Top-right diagonal
+        }
+        if (row != n_of_P - 1 && col != 0) {  // send to Bottom-left neighbor
+            double msg = A0[num_row - 1][0];  // Assuming first element for diagonal communication
+            MPI_Send(&msg, 1, MPI_DOUBLE, ID + n_of_P - 1, 0, MPI_COMM_WORLD);  // Bottom-left diagonal
+        }
+        if (row != n_of_P - 1 && col != n_of_P - 1) {  // send to Bottom-right neighbor
+            double msg = A0[num_row - 1][num_col - 1];  // Assuming last element for diagonal communication
+            MPI_Send(&msg, 1, MPI_DOUBLE, ID + n_of_P + 1, 0, MPI_COMM_WORLD);  // Bottom-right diagonal
+        }
+
+        // Send l,r,u,b neighbors
+        // Send bottom row to the bottom neighbor
+        if (row != n_of_P - 1) {  // If not in the last row
+            vector<double> msg = A0[sub_rows - 1];  // Get the last row of the submatrix
+            if (ID == 0 && verbose) {
+                cout << "bottom row msg: " << msg.size() << endl;
+            }
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD);  // Send to the bottom
+        }
+        
+        // Send top row to the top neighbor
+        if (row != 0) {  // If not in the first row
+            vector<double> msg = A0[0];  // Get the first row of the submatrix
+            if (ID == 0 && verbose) {
+                cout << "top row msg: " << msg.size() << endl;
+            }
+            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD);  // Send to the top
+        }
+
         if (col != 0) {  // If not in the first column
             vector<double> msg;
             get_first_col(msg, A0);  // Get the first column of the submatrix
-            // if (verbose) {
-            //     cout << "Sending msg from right " << ID << " to " << ID - 1 << ": ";
-            //     for (double elt: msg) cout << elt << " ";
-            //     cout << endl;
-            // }
+            if (ID == 0 && verbose) {
+                cout << "left col msg: " << msg.size() << endl;
+            }
             MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - 1, 0, MPI_COMM_WORLD);  // Send to the left
         }
 
@@ -116,47 +151,23 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
         if (col != n_of_P - 1) {  // If not in the last column
             vector<double> msg;
             get_last_col(msg, A0);  // Get the last column of the submatrix
+            if (ID == 0 && verbose) {
+                // print msg
+                cout << "right col msg, ID: "<< ID << " size: " << msg.size() << endl;
+                cout << row <<' '<< col << ' ' << n_of_P << endl;
+            }
             MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD);  // Send to the right
-        }
-
-        // Send top row to the top neighbor
-        if (row != 0) {  // If not in the first row
-            vector<double> msg = A0[0];  // Get the first row of the submatrix
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P, 0, MPI_COMM_WORLD);  // Send to the top
-        }
-
-        // Send bottom row to the bottom neighbor
-        if (row != n_of_P - 1) {  // If not in the last row
-            vector<double> msg = A0[sub_rows - 1];  // Get the last row of the submatrix
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P, 0, MPI_COMM_WORLD);  // Send to the bottom
-        }
-
-        // Handle diagonal neighbors
-        if (row != 0 && col != 0) {  // Top-left diagonal neighbor
-            vector<double> msg;
-            get_first_col(msg, A0);  // Assuming first column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P - 1, 0, MPI_COMM_WORLD);  // Top-left diagonal
-        }
-
-        if (row != 0 && col != n_of_P - 1) {  // Top-right diagonal neighbor
-            vector<double> msg;
-            get_last_col(msg, A0);  // Assuming last column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID - n_of_P + 1, 0, MPI_COMM_WORLD);  // Top-right diagonal
-        }
-
-        if (row != n_of_P - 1 && col != 0) {  // Bottom-left diagonal neighbor
-            vector<double> msg;
-            get_first_col(msg, A0);  // Assuming first column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P - 1, 0, MPI_COMM_WORLD);  // Bottom-left diagonal
-        }
-
-        if (row != n_of_P - 1 && col != n_of_P - 1) {  // Bottom-right diagonal neighbor
-            vector<double> msg;
-            get_last_col(msg, A0);  // Assuming last column for diagonal communication
-            MPI_Send(&msg[0], msg.size(), MPI_DOUBLE, ID + n_of_P + 1, 0, MPI_COMM_WORLD);  // Bottom-right diagonal
+            if (ID == 0 && verbose) {
+                cout << "Finish sending right" << endl;
+            }
         }
 
 
+        
+
+        
+
+        // diagonal communication
         // from right
         if (col != n_of_P - 1) {  // If not in the last column
             MPI_Recv(&right_col[0], num_row, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -235,9 +246,7 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
                         A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], right_col[i-1], right_col[i+1]);
                     }
                     else{
-                        // error and return
-                        cout << "Error: " << i << " " << j << endl;
-                        return;
+                        A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], A0[i-1][j+1], A0[i+1][j+1]);
                     }
                 }
             }
