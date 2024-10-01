@@ -11,5 +11,5 @@
 #SBATCH --account=cse587f24_class
 #SBATCH --partition=standard
 
-mpirun -np 36 --bind-to core:overload-allowed ./main 2000 500 0 1 > parallel-small-36.txt &
-mpirun -np 36 --bind-to core:overload-allowed ./main 1000 4000 0 1 > parallel-large-36.txt &
+mpirun -np 36 --bind-to core:overload-allowed ./main 2000 500 0 1 > parallel-small-36.txt
+mpirun -np 36 --bind-to core:overload-allowed ./main 1000 4000 0 1 > parallel-large-36.txt
