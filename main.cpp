@@ -44,10 +44,11 @@ void append_col(vector<vector<double>>& A0) {
 void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID) {
     // 至少对于样例是可以均分的
     int n_of_P = sqrt(P);
-    int sub_rows = ceil(m / n_of_P);
-    int sub_cols = ceil(n / n_of_P);
+    double sqrt_P = sqrt(P);
+    int sub_rows = ceil(m / sqrt_P);
+    int sub_cols = ceil(n / sqrt_P);
 
-    int row = floor(ID / n_of_P);
+    int row = floor(ID / sqrt_P);
     int col = ID - row * n_of_P;
     // boundary
     int num_row = min(sub_rows * (row + 1), m) - sub_rows * row;
@@ -161,11 +162,6 @@ void run_parallel(int m, int n, double (*f)(double), int verbose, int P, int ID)
                 cout << "Finish sending right" << endl;
             }
         }
-
-
-        
-
-        
 
         // diagonal communication
         // from right
