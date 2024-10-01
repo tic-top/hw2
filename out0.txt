@@ -1,4 +1,0 @@
-Root processor 0 is initializing.
-Sum is:  7.31904e+06
-Sum of square is:  2.20604e+08
-Time: 6.21963
