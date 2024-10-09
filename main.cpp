@@ -199,6 +199,8 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
             }
         }
 
+        MPI_Barrier(MPI_COMM_WORLD);
+
         // diagonal communication
         // from right
         if (col != n_of_P - 1) {  // If not in the last column
@@ -300,47 +302,24 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
     // Verification
     // sum
     double local_sum = 0;
+    double local_sum_square = 0;
+
     for (int i = 0; i < num_row; i++) {
         for (int j = 0; j < num_col; j++) {
             local_sum += A0[i][j];
+            local_sum_square += A0[i][j] * A0[i][j];
         }
     }
 
-    if (ID != 0){
-        MPI_Send(&local_sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-    }
-    else {
-        double total_sum = local_sum;
-        for (int i = 1; i < P; i++) {
-            double i_sum = -1;
-            MPI_Recv(&i_sum, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            total_sum += i_sum;
-        }
-        cout << "Sum is:  " << total_sum << endl;
-    }
+    double global_sum = 0.0 , global_sum2 = 0.0;
 
-    // sum of square
-    local_sum = 0;
-    for (int i = 0; i < num_row; i++) {
-        for (int j = 0; j < num_col; j++) {
-            local_sum += A0[i][j] * A0[i][j];
-        }
-    }
-    if (ID != 0){
-        MPI_Send(&local_sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-    }
-    else {
-        double total_sum = local_sum;
-        for (int i = 1; i < P; i++) {
-            double i_sum = -1;
-            MPI_Recv(&i_sum, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            total_sum += i_sum;
-        }
-        cout << "Sum of square is:  " << total_sum << endl;
-    }
+    MPI_Reduce (& local_sum , & global_sum , 1, MPI_DOUBLE , MPI_SUM , 0, MPI_COMM_WORLD );
+    MPI_Reduce (& local_sum2 , & global_sum2 , 1, MPI_DOUBLE , MPI_SUM , 0, MPI_COMM_WORLD );
 
     if (ID == 0) {
         double end = MPI_Wtime();
+        cout << "Sum is:  " << global_sum << endl;
+        cout << "Sum of square is:  " << global_sum2 << endl;
         cout << "Time: " << end - start << endl;
     }
 
