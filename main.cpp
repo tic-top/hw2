@@ -16,17 +16,10 @@ double f(double x) {
     return y;
 }
 
-double g(double z) {
-    // Calculate min{30, z}
-    double min_val = (z < 30) ? z : 30;
-    
-    // Calculate max{-25, min{30, z}}
-    return (min_val > -25) ? min_val : -25;
-}
-
 // a,b,c,d,e
 double h(double a, double b, double c, double d, double e) {
-    return g(f(f(a) + g(b) + f(c) + g(d) + f(e)) / 5);
+    double z = (f(a) + f(b) + f(c) + f(d) + f(e)) / 5;
+    return max ( -25. , min (30. , z));
 }
 
 void get_first_col(vector<double>& msg, const vector<vector<double>>& A0) {
@@ -44,11 +37,9 @@ void append_col(vector<vector<double>>& A0) {
 void run_serial(int m, int n, int verbose, int P, int ID) {
     // initilize
     vector<vector<double>> A0(m, vector<double> (n, 0));
-    for (int i = 0; i < m; i++) {
-        for (int j = 0; j < n; j++) {
-            double ai = i;
-            double aj = j;
-            A0[i][j] = (double)aj * sin(ai) + ai * cos(aj) + sqrt(ai + aj + 1);
+    for (double i = 0; i < m; i++) {
+        for (double j = 0; j < n; j++) {
+            A0[i][j] = i * sin(j) + j * cos(i) + sqrt(i + j + 1);
         }
     }
 
