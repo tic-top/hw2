@@ -1,4 +1,3 @@
-Start process 0 of 4, sub_rows is 1000, sub_cols is 250, i_start = 0, i_end = 1000, j_start = 0, j_end = 250, num_row = 1000, num_col = 250
-Start process 1 of 4, sub_rows is 1000, sub_cols is 250, i_start = 0, i_end = 1000, j_start = 250, j_end = 500, num_row = 1000, num_col = 250
-Start process 2 of 4, sub_rows is 1000, sub_cols is 250, i_start = 1000, i_end = 2000, j_start = 0, j_end = 250, num_row = 1000, num_col = 250
-Start process 3 of 4, sub_rows is 1000, sub_cols is 250, i_start = 1000, i_end = 2000, j_start = 250, j_end = 500, num_row = 1000, num_col = 250
+Sum is:  3.01221e+07
+Sum of square is:  6.85949e+09
+Time: 0.842367

@@ -1,3 +1,0 @@
-Sum is:  3.01222e+07
-Sum of square is:  6.85949e+09
-Time: 6.79355
