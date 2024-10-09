@@ -313,8 +313,8 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
 
     double global_sum = 0.0 , global_sum2 = 0.0;
 
-    MPI_Reduce (& local_sum , & global_sum , 1, MPI_DOUBLE , MPI_SUM , 0, MPI_COMM_WORLD );
-    MPI_Reduce (& local_sum2 , & global_sum2 , 1, MPI_DOUBLE , MPI_SUM , 0, MPI_COMM_WORLD );
+    MPI_Reduce(& local_sum , & global_sum , 1, MPI_DOUBLE , MPI_SUM , 0, MPI_COMM_WORLD);
+    MPI_Reduce(& local_sum_square , & global_sum2 , 1, MPI_DOUBLE , MPI_SUM , 0, MPI_COMM_WORLD);
 
     if (ID == 0) {
         double end = MPI_Wtime();
