@@ -1,3 +1,3 @@
-Sum is:  1.13255e+08
-Sum of square is:  1.40519e+10
-Time: 96.6835
+Sum is:  1.19289e+08
+Sum of square is:  1.41824e+10
+Time: 119.75
