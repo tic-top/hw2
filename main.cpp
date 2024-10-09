@@ -83,11 +83,10 @@ void run_serial(int m, int n, int verbose, int P, int ID) {
 void run_parallel(int m, int n, int verbose, int P, int ID) {
     int n_of_P = sqrt(P);
     double sqrt_P = sqrt(P);
-    int sub_rows = ceil(m / sqrt_P);
-    int sub_cols = ceil(n / sqrt_P);
-
-    int row = floor(ID / sqrt_P);
-    int col = ID - row * n_of_P;
+    int sub_rows = ceil((double)m / sqrt_P);
+    int sub_cols = ceil((double)n / sqrt_P);
+    int row = ID / n_of_P;
+    int col = ID % n_of_P;
     // boundary
     int num_row = min(sub_rows * (row + 1), m) - sub_rows * row;
     int num_col = min(sub_cols * (col + 1), n) - sub_cols * col;
