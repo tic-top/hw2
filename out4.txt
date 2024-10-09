@@ -1,9 +1,9 @@
-Start process 0 of 4, sub_rows is 1000, sub_cols is 250, i_start = 0, i_end = 1000, j_start = 0, j_end = 250, num_row = 1000, num_col = 250
 Start process 1 of 4, sub_rows is 1000, sub_cols is 250, i_start = 0, i_end = 1000, j_start = 250, j_end = 500, num_row = 1000, num_col = 250
 Start process 2 of 4, sub_rows is 1000, sub_cols is 250, i_start = 1000, i_end = 2000, j_start = 0, j_end = 250, num_row = 1000, num_col = 250
 Start process 3 of 4, sub_rows is 1000, sub_cols is 250, i_start = 1000, i_end = 2000, j_start = 250, j_end = 500, num_row = 1000, num_col = 250
-row = 0, col = 0, Contents of 0: 
+Start process 0 of 4, sub_rows is 1000, sub_cols is 250, i_start = 0, i_end = 1000, j_start = 0, j_end = 250, num_row = 1000, num_col = 250
 row = 0, col = 1, Contents of 1: 
+row = 0, col = 0, Contents of 0: 
 row = 1, col = 0, Contents of 2: 
 row = 1, col = 1, Contents of 3: 
 Iteration 0

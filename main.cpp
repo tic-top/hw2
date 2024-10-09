@@ -293,7 +293,7 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
             }
             cout << "\n";
         }
-        swap(A,A0);
+        A0 = A;
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
