@@ -103,7 +103,6 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
             << ", num_col = " << num_col
             << "\n";  
     }
-
     vector<vector<double>> A0(num_row, vector<double> (num_col, 0));
 
     // initialize A0
@@ -205,7 +204,6 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
         if (col != n_of_P - 1) {  // If not in the last column
             MPI_Recv(&right_col[0], num_row, MPI_DOUBLE, ID + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-
         // from left
         if (col != 0) {  // If not in the first column
             MPI_Recv(&left_col[0], num_row, MPI_DOUBLE, ID - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -295,8 +293,7 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
             }
             cout << "\n";
         }
-
-        A0 = A;
+        swap(A,A0);
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
