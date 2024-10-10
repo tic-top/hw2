@@ -42,16 +42,18 @@ void append_col(vector<vector<double>>& A0) {
 void run_serial(int m, int n, int verbose, int P, int ID) {
     // initilize
     vector<vector<double>> A0(m, vector<double> (n, 0));
-    vector<vector<double>> A1(m, vector<double> (n, 0));
-    vector<vector<double>> A(m, vector<double> (n, 0));
-    for (double i = 0; i < m; i++) {
-        for (double j = 0; j < n; j++) {
-            A0[i][j] = i * sin(j) + j * cos(i) + sqrt(i + j + 1);
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            double ai = i;
+            double aj = j;
+            A0[i][j] = (double)aj * sin(ai) + ai * cos(aj) + sqrt(ai + aj + 1);
         }
     }
 
     double start = MPI_Wtime();
     for (int it = 0; it < IT_NUM; it++) {
+        vector<vector<double>> A(m, vector<double> (n, 0));
+        vector<vector<double>> A1(m, vector<double> (n, 0));
         for (int i = 0; i < m; ++i) {
             for (int j = 0; j < n; ++j) {
                 A1[i][j] = f(A0[i][j]);
@@ -64,7 +66,8 @@ void run_serial(int m, int n, int verbose, int P, int ID) {
                     A[i][j] = A0[i][j];
                 } else {
                     // now is the local level
-                    A[i][j] = g(A1[i][j], A1[i-1][j-1], A1[i+1][j-1], A1[i-1][j+1], A1[i+1][j+1]);
+                    // A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], A0[i-1][j+1], A0[i+1][j+1]);
+                    A[i][j]= g(A1[i][j], A1[i-1][j-1], A1[i+1][j-1], A1[i-1][j+1], A1[i+1][j+1]);
                 }
             }
         }
@@ -72,13 +75,19 @@ void run_serial(int m, int n, int verbose, int P, int ID) {
     }
     // sum
     double sum = 0;
-    double sum_square = 0;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
             sum += A0[i][j];
+        }
+    }
+    // sum of square
+    double sum_square = 0;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
             sum_square += A0[i][j] * A0[i][j];
         }
     }
+    // time
     double end = MPI_Wtime();
     cout << "Sum is:  " << sum << endl;
     cout << "Sum of square is:  " << sum_square << endl;
