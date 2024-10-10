@@ -231,8 +231,58 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
         
         // calculation
         vector<vector<double>> A(num_row, vector<double> (num_col, 0));
+
+        // inner
+        for (int i = 1; i < num_row - 1; ++i)
+            for (int j = 1; j < num_col - 1; ++j)
+                A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], A0[i-1][j+1], A0[i+1][j+1]);
+
  
         for (int i = 0; i < num_row; ++i) {
+            for (int j = 0; j < num_col; j += num_col - 1) {
+                double global_i = sub_rows * row + i;
+                double global_j = sub_cols * col + j;
+                if (global_i == 0 || global_i == m - 1 || global_j == 0 || global_j == n - 1) {
+                    A[i][j] = A0[i][j];
+                } else {
+                    // now is the local level
+                    // left-up
+                    if (i == 0 && j == 0) {
+                        A[i][j] = h(A0[i][j], t_l, up_row[j+1], left_col[i+1], A0[i+1][j+1]);
+                    }
+                    // right-up
+                    else if (i == 0 && j == num_col - 1) {
+                        A[i][j] = h(A0[i][j], t_r, up_row[j-1], A0[i+1][j-1], right_col[i+1]);
+                    }
+                    // left-down
+                    else if (i == num_row - 1 && j == 0) {
+                        A[i][j] = h(A0[i][j], down_row[j+1], b_l, left_col[i-1], A0[i-1][j+1]);
+                    }
+                    // right-down
+                    else if (i == num_row - 1 && j == num_col - 1) {
+                        A[i][j] = h(A0[i][j], down_row[j-1], b_r, A0[i-1][j-1], right_col[i-1]);
+                    }
+                    // top
+                    else if (i == 0) {
+                        A[i][j] = h(A0[i][j], up_row[j-1], up_row[j+1], A0[i+1][j-1], A0[i+1][j+1]);
+                    }
+                    // bottom
+                    else if (i == num_row - 1) {
+                        A[i][j] = h(A0[i][j], down_row[j-1], down_row[j+1], A0[i-1][j-1], A0[i-1][j+1]);
+                    }
+                    // left
+                    else if (j == 0) {
+                        A[i][j] = h(A0[i][j], A0[i-1][j+1], A0[i+1][j+1], left_col[i-1], left_col[i+1]);
+                    }
+                    // right
+                    else if (j == num_col - 1) {
+                        A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], right_col[i-1], right_col[i+1]);
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < num_row; i+=num_row-1) {
             for (int j = 0; j < num_col; ++j) {
                 double global_i = sub_rows * row + i;
                 double global_j = sub_cols * col + j;
@@ -272,23 +322,20 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
                     else if (j == num_col - 1) {
                         A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], right_col[i-1], right_col[i+1]);
                     }
-                    else{
-                        A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], A0[i-1][j+1], A0[i+1][j+1]);
-                    }
                 }
             }
         }
 
-        // if (verbose && it == IT_NUM-1) {
-        //     cout << "Contents of A of " << ID <<  ": ";
-        //     for (int i = 0; i < num_row; i++) {
-        //         for (int j = 0; j < num_col; j++) {
-        //             cout << A[i][j] << " ";
-        //         }
-        //         cout << "\n";
-        //     }
-        //     cout << "\n";
-        // }
+        if (verbose && it == IT_NUM-1) {
+            cout << "Contents of A of " << ID <<  ": ";
+            for (int i = 0; i < num_row; i++) {
+                for (int j = 0; j < num_col; j++) {
+                    cout << A[i][j] << " ";
+                }
+                cout << "\n";
+            }
+            cout << "\n";
+        }
         A0 = A;
         MPI_Barrier(MPI_COMM_WORLD);
     }
