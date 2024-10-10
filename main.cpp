@@ -131,7 +131,7 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
     double t = MPI_Wtime();
     for (int it = 0; it < IT_NUM; it++) { 
         if (ID == 0 && verbose) {
-            cout << "Iteration " << it << MPI_Wtime()-t << 's' <<endl;
+            cout << "Iteration " << it << " "<< MPI_Wtime()-t << 's' <<endl;
             t = MPI_Wtime();
         }
         // Send diagonal neighbors
@@ -195,8 +195,6 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
             }
         }
 
-        MPI_Barrier(MPI_COMM_WORLD);
-
         // diagonal communication
         // from right
         if (col != n_of_P - 1) {  // If not in the last column
@@ -233,9 +231,9 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
         
         // calculation
         vector<vector<double>> A(num_row, vector<double> (num_col, 0));
+ 
         for (int i = 0; i < num_row; ++i) {
             for (int j = 0; j < num_col; ++j) {
-                // A(i, j) = Ao(i, j) if i = 0 or i = m − 1 or j = 0 or j = n − 1 (i.e., it is unchanged along
                 double global_i = sub_rows * row + i;
                 double global_j = sub_cols * col + j;
                 if (global_i == 0 || global_i == m - 1 || global_j == 0 || global_j == n - 1) {
@@ -281,16 +279,16 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
             }
         }
 
-        if (verbose && it == IT_NUM-1) {
-            cout << "Contents of A of " << ID <<  ": ";
-            for (int i = 0; i < num_row; i++) {
-                for (int j = 0; j < num_col; j++) {
-                    cout << A[i][j] << " ";
-                }
-                cout << "\n";
-            }
-            cout << "\n";
-        }
+        // if (verbose && it == IT_NUM-1) {
+        //     cout << "Contents of A of " << ID <<  ": ";
+        //     for (int i = 0; i < num_row; i++) {
+        //         for (int j = 0; j < num_col; j++) {
+        //             cout << A[i][j] << " ";
+        //         }
+        //         cout << "\n";
+        //     }
+        //     cout << "\n";
+        // }
         A0 = A;
         MPI_Barrier(MPI_COMM_WORLD);
     }
