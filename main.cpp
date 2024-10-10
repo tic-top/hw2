@@ -42,6 +42,7 @@ void append_col(vector<vector<double>>& A0) {
 void run_serial(int m, int n, int verbose, int P, int ID) {
     // initilize
     vector<vector<double>> A0(m, vector<double> (n, 0));
+    vector<vector<double>> A1(m, vector<double> (n, 0));
     vector<vector<double>> A(m, vector<double> (n, 0));
     for (double i = 0; i < m; i++) {
         for (double j = 0; j < n; j++) {
@@ -53,12 +54,16 @@ void run_serial(int m, int n, int verbose, int P, int ID) {
     for (int it = 0; it < IT_NUM; it++) {
         for (int i = 0; i < m; ++i) {
             for (int j = 0; j < n; ++j) {
+                A1[i][j] = f(A0[i][j]);
+            }
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
                 // A(i, j) = Ao(i, j) if i = 0 or i = m − 1 or j = 0 or j = n − 1 (i.e., it is unchanged along
                 if (i == 0 || i == m - 1 || j == 0 || j == n - 1) {
                     A[i][j] = A0[i][j];
                 } else {
                     // now is the local level
-                    A[i][j] = h(A0[i][j], A0[i-1][j-1], A0[i+1][j-1], A0[i-1][j+1], A0[i+1][j+1]);
+                    A[i][j] = g(A1[i][j], A1[i-1][j-1], A1[i+1][j-1], A1[i-1][j+1], A1[i+1][j+1]);
                 }
             }
         }
@@ -293,6 +298,9 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
                     // right
                     else if (j == num_col - 1) {
                         A[i][j] = g(A1[i][j], A1[i-1][j-1], A1[i+1][j-1], right_col[i-1], right_col[i+1]);
+                    }
+                    else{
+                        A[i][j] = g(A1[i][j], A1[i-1][j-1], A1[i+1][j-1], A1[i-1][j+1], A1[i+1][j+1]);
                     }
                 }
             }
