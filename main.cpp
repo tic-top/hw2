@@ -56,6 +56,7 @@ void run_serial(int m, int n, int verbose, int P, int ID) {
             for (int j = 0; j < n; ++j) {
                 A1[i][j] = f(A0[i][j]);
             }
+        }
         for (int i = 0; i < m; ++i) {
             for (int j = 0; j < n; ++j) {
                 // A(i, j) = Ao(i, j) if i = 0 or i = m − 1 or j = 0 or j = n − 1 (i.e., it is unchanged along
