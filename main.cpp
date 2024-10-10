@@ -128,9 +128,11 @@ void run_parallel(int m, int n, int verbose, int P, int ID) {
     double left_col[num_row];
     double t_l, t_r, b_l, b_r;
         
-    for (int it = 0; it < IT_NUM; it++) {
+    double t = MPI_Wtime();
+    for (int it = 0; it < IT_NUM; it++) { 
         if (ID == 0 && verbose) {
-            cout << "Iteration " << it << endl;
+            cout << "Iteration " << it << MPI_Wtime()-t << 's' <<endl;
+            t = MPI_Wtime();
         }
         // Send diagonal neighbors
         if (row != 0 && col != 0) {  // send to Top-left neighbor
